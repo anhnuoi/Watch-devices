@@ -23,7 +23,6 @@ MainWindow::MainWindow(QWidget *parent)
     // Adjust column width to fit the view's width proportionally
     adjustColumnWidths();
 
-    // Connect buttons to their slots
     connect(ui->auditAllButton, &QPushButton::clicked, this, &MainWindow::on_auditAllButton_clicked);
     connect(ui->auditButton, &QPushButton::clicked, this, &MainWindow::on_auditButton_clicked);
 
@@ -43,7 +42,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::setupModel()
 {
-    model->setColumnCount(5); // Increased column count to 5 to accommodate checkboxes
+    model->setColumnCount(5);
     model->setHeaderData(0, Qt::Horizontal, QObject::tr(""));
     model->setHeaderData(1, Qt::Horizontal, QObject::tr("Model"));
     model->setHeaderData(2, Qt::Horizontal, QObject::tr("Serial Number"));
@@ -55,7 +54,9 @@ void MainWindow::updateDeviceTable(const QList<Device> &devices)
 {
     // Clear the current table
     model->removeRows(0, model->rowCount());
-
+    if (devices.isEmpty()) {
+        return; // No devices detected, return without adding rows
+    }
     for (const Device &device : devices) {
         QList<QStandardItem *> items;
         items.append(new QStandardItem()); // Placeholder for checkbox
