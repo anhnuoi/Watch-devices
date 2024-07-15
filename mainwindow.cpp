@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
     , model(new QStandardItemModel(this))
     , serial(new QSerialPort(this))
+    , deviceManager(new DeviceManager(this))
 {
     ui->setupUi(this);
 
@@ -22,20 +23,17 @@ MainWindow::MainWindow(QWidget *parent)
     // Adjust column width to fit the view's width proportionally
     adjustColumnWidths();
 
-    // Add checkboxes to the first column
-    addCheckBoxes();
-
-    // Set up a timer to periodically check for devices
-    QTimer *timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, &MainWindow::detectDevices);
-    timer->start(1000); // Check every second
-
-    // Connect the resize event of the deviceTableView to adjust column widths
-    connect(ui->deviceTableView->horizontalHeader(), &QHeaderView::sectionResized, this, &MainWindow::adjustColumnWidths);
-
     // Connect buttons to their slots
     connect(ui->auditAllButton, &QPushButton::clicked, this, &MainWindow::on_auditAllButton_clicked);
     connect(ui->auditButton, &QPushButton::clicked, this, &MainWindow::on_auditButton_clicked);
+
+    // Connect the DeviceManager signal to updateDeviceTable slot
+    connect(deviceManager, &DeviceManager::devicesDetected, this, &MainWindow::updateDeviceTable);
+
+    // Set up a timer to periodically check for devices
+    QTimer *timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, [=]() { deviceManager->detectDevices(); });
+    timer->start(1000); // Check every second
 }
 
 MainWindow::~MainWindow()
@@ -53,21 +51,18 @@ void MainWindow::setupModel()
     model->setHeaderData(4, Qt::Horizontal, QObject::tr("Status"));
 }
 
-void MainWindow::detectDevices()
+void MainWindow::updateDeviceTable(const QList<Device> &devices)
 {
     // Clear the current table
     model->removeRows(0, model->rowCount());
 
-    // Get the list of available serial ports
-    const auto serialPortInfos = QSerialPortInfo::availablePorts();
-
-    for (const QSerialPortInfo &info : serialPortInfos) {
+    for (const Device &device : devices) {
         QList<QStandardItem *> items;
         items.append(new QStandardItem()); // Placeholder for checkbox
-        items.append(new QStandardItem(info.description()));
-        items.append(new QStandardItem(info.serialNumber()));
-        items.append(new QStandardItem("N/A")); // Placeholder for IMEI
-        items.append(new QStandardItem("Available"));
+        items.append(new QStandardItem(device.getModel()));
+        items.append(new QStandardItem(device.getSerialNumber()));
+        items.append(new QStandardItem(device.getImei()));
+        items.append(new QStandardItem(device.getStatus()));
 
         model->appendRow(items);
     }
@@ -81,11 +76,11 @@ void MainWindow::adjustColumnWidths()
     int totalWidth = ui->deviceTableView->viewport()->width();
 
     // Calculate the width for each column based on a percentage
-    int checkBoxColumnWidth = totalWidth * 0.05;
-    int modelColumnWidth = totalWidth * 0.2375;
-    int serialNumberColumnWidth = totalWidth * 0.2375;
-    int imeiColumnWidth = totalWidth * 0.2375;
-    int statusColumnWidth = totalWidth * 0.2375;
+    int checkBoxColumnWidth = totalWidth * 0.02;
+    int modelColumnWidth = totalWidth * 0.23;
+    int serialNumberColumnWidth = totalWidth * 0.275;
+    int imeiColumnWidth = totalWidth * 0.275;
+    int statusColumnWidth = totalWidth * 0.2;
 
     ui->deviceTableView->setColumnWidth(0, checkBoxColumnWidth);
     ui->deviceTableView->setColumnWidth(1, modelColumnWidth);
@@ -122,7 +117,3 @@ void MainWindow::on_auditButton_clicked()
     }
 }
 
-void MainWindow::updateDeviceTable()
-{
-    // Placeholder for future device information updates, like IMEI
-}

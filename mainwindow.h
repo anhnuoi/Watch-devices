@@ -7,6 +7,8 @@
 #include <QCheckBox>
 #include <QTimer>
 #include <QSerialPortInfo>
+#include "device.h"
+#include "devicemanager.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -21,18 +23,18 @@ public:
     ~MainWindow();
 
 private slots:
-    void detectDevices();
-    void adjustColumnWidths();
     void on_auditAllButton_clicked();
     void on_auditButton_clicked();
+    void adjustColumnWidths();
+    void updateDeviceTable(const QList<Device> &devices);
 
 private:
     Ui::MainWindow *ui;
     QStandardItemModel *model;
     QSerialPort *serial;
+    DeviceManager *deviceManager;
 
     void setupModel();
-    void updateDeviceTable();
     void addCheckBoxes();
 };
 
